@@ -264,9 +264,12 @@ svg{display:block}
 html,body{margin:0}
 img{-webkit-touch-callout:none;-webkit-user-drag:none}
 @media (max-width:500px){
-  html,body{height:100%;overflow:hidden;background:var(--bg)}
-  body{position:fixed;inset:0}
-  .phone{position:fixed!important;top:0;left:0;right:0;bottom:auto;width:100%!important;height:var(--app-h,100%)!important;min-height:100%}
+  /* no overflow:hidden on the root: on iOS it clips the page to the (too short) reported viewport */
+  html,body{height:auto;min-height:0;overflow:visible;background:var(--bg);overscroll-behavior:none}
+  body{position:static}
+  .stage,.phone-wrap{height:auto!important}
+  .phone{position:fixed!important;top:0;left:0;right:0;bottom:auto;width:100%!important;height:max(var(--app-h,100%),100lvh)!important}
+  .dbg{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:99;background:#000;color:#7CFF7C;font:12px/1.5 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;white-space:pre;pointer-events:none}
   .status,.home-ind{display:none}
   .content{padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
   .hero{height:calc(295px + env(safe-area-inset-top,0px))}
@@ -690,7 +693,15 @@ const topband=document.getElementById('topband');scroller.addEventListener('scro
   var portrait=innerHeight>=innerWidth, sh=portrait?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width);
   if((navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&innerWidth<=500)h=Math.max(h,sh);
   document.documentElement.style.setProperty('--app-h',h+'px')}
-  setH();addEventListener('resize',setH);addEventListener('orientationchange',function(){setTimeout(setH,300)})})();
+  setH();addEventListener('resize',setH);addEventListener('orientationchange',function(){setTimeout(setH,300)});
+  addEventListener('scroll',function(){if(scrollY)scrollTo(0,0)});
+  /* hidden diagnostics: triple-tap "Total balance" */
+  var taps=0,tt;document.querySelector('.bal-label').addEventListener('click',function(e){if(e.target.closest('button'))return;taps++;clearTimeout(tt);tt=setTimeout(function(){taps=0},600);
+    if(taps<3)return;taps=0;var d=document.querySelector('.dbg');if(d){d.remove();return}
+    d=document.createElement('div');d.className='dbg';var pr=document.createElement('i');pr.style.cssText='position:fixed;top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom);left:0;width:0';document.body.appendChild(pr);
+    var r=pr.getBoundingClientRect(),ph=document.getElementById('phone').getBoundingClientRect(),nv=document.querySelector('.nav').getBoundingClientRect();pr.remove();
+    d.textContent='standalone: '+(navigator.standalone||matchMedia('(display-mode: standalone)').matches)+'\ninner: '+innerWidth+'×'+innerHeight+'\nscreen: '+screen.width+'×'+screen.height+'\nvisualViewport: '+(window.visualViewport?Math.round(visualViewport.height):'-')+'\nsafe top/bottom: '+Math.round(r.top)+' / '+Math.round(innerHeight-r.bottom)+'\n--app-h: '+getComputedStyle(document.documentElement).getPropertyValue('--app-h')+'\nphone: '+Math.round(ph.top)+'…'+Math.round(ph.bottom)+'\nnav: '+Math.round(nv.top)+'…'+Math.round(nv.bottom);
+    document.body.appendChild(d)})})();
 </script>
 </body>
 </html>
