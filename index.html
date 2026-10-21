@@ -268,7 +268,15 @@ img{-webkit-touch-callout:none;-webkit-user-drag:none}
   html,body{height:auto;min-height:0;overflow:visible;background:var(--bg);overscroll-behavior:none}
   body{position:static}
   .stage,.phone-wrap{height:auto!important}
-  .phone{position:fixed!important;top:0;left:0;right:0;bottom:auto;width:100%!important;height:max(var(--app-h,100%),100lvh)!important}
+  .phone{position:fixed!important;top:0;left:0;right:0;bottom:auto;width:100%!important;height:var(--app-h,100%)!important}
+  /* iOS bug: the web view stops short of the screen bottom by --gap; that strip shows the root background, so paint it like the tab bar */
+  html.gapfix,html.gapfix body{background:var(--nav-solid)}
+  html.gapfix .nav{background:var(--nav-solid);backdrop-filter:none;-webkit-backdrop-filter:none;height:max(64px, calc(114px - var(--gap,0px)))}
+  html.gapfix .tab{padding-top:12px;gap:6px}
+  html.gapfix .qr-ring{top:-9px}
+  html.gapfix .content{padding-bottom:110px}
+  html.gapfix .toast{bottom:90px}
+  html.gapfix .kb{--kb-safe:0px;padding-bottom:8px}
   .dbg{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 70px);z-index:99;background:#000;color:#7CFF7C;font:12px/1.5 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:12px;white-space:pre;pointer-events:none}
   .status,.home-ind{display:none}
   .content{padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
@@ -278,9 +286,12 @@ img{-webkit-touch-callout:none;-webkit-user-drag:none}
   .topband{position:absolute;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);z-index:20;pointer-events:none;
     background:rgba(11,24,36,.82);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);opacity:0;transition:opacity .25s}
   .topband.on{opacity:1}
+  :root{--nav-solid:#FFFFFF}
+  :root[data-theme="dark"]{--nav-solid:#212C29}
   .search{--stop:calc(env(safe-area-inset-top,0px) + 6px)}
   .kb{--kb-safe:max(0px,calc(env(safe-area-inset-bottom,0px) - 22px))}
 }
+@media (max-width:500px) and (prefers-color-scheme: dark){:root:not([data-theme="light"]){--nav-solid:#212C29}}
 </style>
 </head>
 <body>
@@ -689,10 +700,11 @@ const topband=document.getElementById('topband');scroller.addEventListener('scro
 </script>
 <script>
 /* iOS home-screen mode: fill the whole physical screen, including the area behind the home indicator */
-(function(){function setH(){var h=innerHeight;
+(function(){function setH(){var h=innerHeight,de=document.documentElement;
   var portrait=innerHeight>=innerWidth, sh=portrait?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width);
-  if((navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&innerWidth<=500)h=Math.max(h,sh);
-  document.documentElement.style.setProperty('--app-h',h+'px')}
+  var sa=(navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&innerWidth<=500;
+  var gap=sa?Math.max(0,sh-h):0;
+  de.style.setProperty('--app-h',h+'px');de.style.setProperty('--gap',gap+'px');de.classList.toggle('gapfix',gap>8)}
   setH();addEventListener('resize',setH);addEventListener('orientationchange',function(){setTimeout(setH,300)});
   addEventListener('scroll',function(){if(scrollY)scrollTo(0,0)});
   /* hidden diagnostics: triple-tap "Total balance" */
@@ -700,7 +712,7 @@ const topband=document.getElementById('topband');scroller.addEventListener('scro
     if(taps<3)return;taps=0;var d=document.querySelector('.dbg');if(d){d.remove();return}
     d=document.createElement('div');d.className='dbg';var pr=document.createElement('i');pr.style.cssText='position:fixed;top:env(safe-area-inset-top);bottom:env(safe-area-inset-bottom);left:0;width:0';document.body.appendChild(pr);
     var r=pr.getBoundingClientRect(),ph=document.getElementById('phone').getBoundingClientRect(),nv=document.querySelector('.nav').getBoundingClientRect();pr.remove();
-    d.textContent='standalone: '+(navigator.standalone||matchMedia('(display-mode: standalone)').matches)+'\ninner: '+innerWidth+'×'+innerHeight+'\nscreen: '+screen.width+'×'+screen.height+'\nvisualViewport: '+(window.visualViewport?Math.round(visualViewport.height):'-')+'\nsafe top/bottom: '+Math.round(r.top)+' / '+Math.round(innerHeight-r.bottom)+'\n--app-h: '+getComputedStyle(document.documentElement).getPropertyValue('--app-h')+'\nphone: '+Math.round(ph.top)+'…'+Math.round(ph.bottom)+'\nnav: '+Math.round(nv.top)+'…'+Math.round(nv.bottom);
+    d.textContent='standalone: '+(navigator.standalone||matchMedia('(display-mode: standalone)').matches)+'\ninner: '+innerWidth+'×'+innerHeight+'\nscreen: '+screen.width+'×'+screen.height+'\nvisualViewport: '+(window.visualViewport?Math.round(visualViewport.height):'-')+'\nsafe top/bottom: '+Math.round(r.top)+' / '+Math.round(innerHeight-r.bottom)+'\ngap: '+getComputedStyle(document.documentElement).getPropertyValue('--gap')+'\n--app-h: '+getComputedStyle(document.documentElement).getPropertyValue('--app-h')+'\nphone: '+Math.round(ph.top)+'…'+Math.round(ph.bottom)+'\nnav: '+Math.round(nv.top)+'…'+Math.round(nv.bottom);
     document.body.appendChild(d)})})();
 </script>
 </body>
