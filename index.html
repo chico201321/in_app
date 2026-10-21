@@ -206,6 +206,7 @@ img{-webkit-touch-callout:none;-webkit-user-drag:none}
 @media (max-width:500px){
   html,body{height:100%;overflow:hidden;background:var(--bg)}
   body{position:fixed;inset:0}
+  .phone{position:fixed!important;top:0;left:0;right:0;bottom:auto;width:100%!important;height:var(--app-h,100%)!important;min-height:100%}
   .status,.home-ind{display:none}
   .content{padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
   .hero{height:calc(295px + env(safe-area-inset-top,0px))}
@@ -477,6 +478,13 @@ const topband=document.getElementById('topband');scroller.addEventListener('scro
   const s=Math.min(1,(innerHeight-70)/932,(innerWidth-40)/430);w.style.transform=`scale(${s})`;w.style.marginBottom=`${-(932*(1-s))}px`}
   fit();addEventListener('resize',fit)})();
 </script>
-
+<script>
+/* iOS home-screen mode: fill the whole physical screen, including the area behind the home indicator */
+(function(){function setH(){var h=innerHeight;
+  var portrait=innerHeight>=innerWidth, sh=portrait?Math.max(screen.height,screen.width):Math.min(screen.height,screen.width);
+  if((navigator.standalone||matchMedia('(display-mode: standalone)').matches)&&innerWidth<=500)h=Math.max(h,sh);
+  document.documentElement.style.setProperty('--app-h',h+'px')}
+  setH();addEventListener('resize',setH);addEventListener('orientationchange',function(){setTimeout(setH,300)})})();
+</script>
 </body>
 </html>
